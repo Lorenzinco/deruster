@@ -1,0 +1,17 @@
+[project]
+name = "deruster"
+version = "0.1.0"
+description = "A Python project"
+dependencies = []
+[[project.authors]]
+name = "lorenzinco"
+
+[build-system]
+requires = [ "setuptools >= 61.0",]
+build-backend = "setuptools.build_meta"
+
+[project.license]
+file = "LICENSE"
+
+[tool.setuptools.packages.find]
+include = [ "deruster", "deruster.*",]
