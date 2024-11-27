@@ -1,2 +1,2 @@
-def main():
-    print("palle")
+def run():
+    print("magari bro, quando funzionerà")

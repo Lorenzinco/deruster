@@ -2,13 +2,16 @@
 
 This project came up when i was following the advanced machine learning 2024 course at Sapienza university of Rome.
 
+
 ## Compy
 This project is proudly powered by [Compy](https://github.com/Etto48/compy), please refer to the documentation to apply changes.
 
 ## Running the model
-This is a python module structured code, to run please enter
+This project makes use of python scripts, to run the model on a given binary please type in terminal:
 ```sh
-python -m deruster.<module>
+run <binary_path>
 ```
-Here's the subset of modules you can run:
-###### run: Runs the model
+To retrain the model type:
+```sh
+train
+```
