@@ -1,4 +1,6 @@
-<img src="logo.png">
+<p align="center">
+    <img src="logo.png" width="200">
+</p>
 
 # De-ruster an AI-powered rust decompiler
 
