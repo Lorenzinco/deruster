@@ -2,12 +2,12 @@
     <img src="logo.png" width="200">
 </p>
 
-# De-ruster an AI-powered rust decompiler
+# DeRuster an AI-powered rust decompiler
 
 This project came up when i was following the advanced machine learning 2024 course at Sapienza university of Rome.
 
 ## Compy
-This project is proudly powered by [Compy](https://github.com/Etto48/compy), please refer to the documentation to apply changes.
+DeRuster is proudly powered by [Compy](https://github.com/Etto48/compy), please refer to the documentation to apply changes.
 
 ## The dataset folder
 The project's scripts need a folder named "data", inside this folder divide the datasets into two other folders: test and training.
