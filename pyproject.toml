@@ -2,7 +2,7 @@
 name = "deruster"
 version = "0.1.0"
 description = "A Python project"
-dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib",]
+dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib", "argparse",]
 [[project.authors]]
 name = "Lorenzo Colombini"
 
@@ -13,6 +13,8 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 run = "deruster.scripts.run:run"
 train = "deruster.scripts.train:train"
+generate = "deruster.scripts.generate:generate_dataset"
+compile = "deruster.scripts.compile:compile"
 
 [project.license]
 file = "LICENSE"
