@@ -2,7 +2,7 @@
 name = "deruster"
 version = "0.1.0"
 description = "A Python project"
-dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib", "argparse",]
+dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib", "argparse", "transformers", "protobuf", "sentencepiece",]
 [[project.authors]]
 name = "Lorenzo Colombini"
 

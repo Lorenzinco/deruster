@@ -1,18 +1,15 @@
 import os
-from deruster.binary import Binary
 import torch
 import numpy as np
-from torch.utils.data import IterableDataset
+from torch.utils.data import Dataset
 import random
-import tiktoken
 
 VALIDATION_SPLIT = 0.2
 
-class DerusterDataset(IterableDataset):
+class DerusterDataset(Dataset):
 
     def __init__(self, binaries, validation: bool = False):
         self.validation = validation
-        self.tokenizer = tiktoken.encoding_for_model("gpt-4o")
         self.binaries = binaries
 
     @staticmethod
@@ -20,16 +17,16 @@ class DerusterDataset(IterableDataset):
         assembly_path = os.path.join(path, "assembly")
         assembly = os.listdir(assembly_path)
 
-        mir_path = os.path.join(path, "mir")
-        mir = os.listdir(mir_path)
+        source_path = os.path.join(path, "source")
+        source = os.listdir(source_path)
 
         binaries = []
         for asm_name in assembly:
             filename = asm_name.split(".")[0]
-            mir_name = filename + ".mir"
-            if mir_name not in mir:
+            source_name = filename + ".rs"
+            if source_name not in source:
                 continue
-            binary = Binary(os.path.join(assembly_path, asm_name), os.path.join(mir_path, mir_name))
+            binary = {"assembly" : os.path.join(assembly_path, asm_name), "source": os.path.join(source_path, source_name)}
             binaries.append(binary)
         
         random.shuffle(binaries)
@@ -39,15 +36,16 @@ class DerusterDataset(IterableDataset):
         return train, validation
 
 
-    def __iter__(self):
-        for binary in self.binaries:
-            yield binary.binary, binary.correct
-
     def __len__(self):
         length = 0
-        length += len(self.assembly)
+        length += len(self.binaries)
         return length
     
     def __getitem__(self, idx):
         binary = self.binaries[idx]
-        return binary.binary, binary.correct
+        with open(binary["assembly"], "r") as f:
+            assembly = f.read()
+        with open(binary["source"], "r") as f:
+            source = f.read()
+        return assembly, source
+    

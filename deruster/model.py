@@ -2,18 +2,29 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 from deruster.dataset import DerusterDataset
+import transformers
 
 class DerusterEncoder(nn.Module):
     def __init__(self, device: str = "cpu", dropout: float = 0.1, num_layers: int = 6, nhead: int = 8, dim_model: int = 512):
         super().__init__()
         self.computation_device = device
         self.dropout = dropout
+        self.asm_tokenizer = transformers.AutoTokenizer.from_pretrained('LLM4Binary/llm4decompile-22b-v2')
+        self.code_tokenizer = transformers.AutoTokenizer.from_pretrained('microsoft/codebert-base')
+        self.asm_tokenizer.pad_token = self.asm_tokenizer.eos_token
+        self.code_tokenizer.pad_token = self.code_tokenizer.eos_token
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=dim_model, nhead=nhead)
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=dim_model, nhead=nhead,batch_first=True, dropout=dropout,
+            dim_feedforward=4*dim_model, activation='gelu',device=self.computation_device)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers,norm=nn.LayerNorm(dim_model),
+            enable_nested_tensor=False)
 
-    def forward(self, x: torch.Tensor):
-        x = self.transformer(x)
+    def forward(self, x: list[str]):
+        x = self.asm_tokenizer(x, padding=True, return_tensors='pt')
+        tokens = x['input_ids']
+        attention_mask = x['attention_mask']
+        attention_mask = attention_mask.bool().to(self.computation_device)
+        x = self.transformer(tokens, src_key_padding_mask=attention_mask)
         return x
 
 
@@ -24,10 +35,11 @@ class DerusterDecoder(nn.Module):
         self.computation_device = device
         self.dropout = dropout
 
-        decoder_layer = nn.TransformerDecoderLayer(d_model=dim_model, nhead=nhead)
+        decoder_layer = nn.TransformerDecoderLayer(d_model=dim_model, nhead=nhead, batch_first=True, dropout=dropout,
+            dim_feedforward=4*dim_model, activation='gelu',device=self.computation_device)
         self.transformer = nn.TransformerDecoder(decoder_layer, num_layers=num_layers)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None):
         x = self.transformer(x)
         return x
     
@@ -39,9 +51,9 @@ class DerusterModel(nn.Module):
         self.encoder = DerusterEncoder(device=device, dropout=dropout, num_layers=num_layers, nhead=nhead, dim_model=dim_model)
         self.decoder = DerusterDecoder(device=device, dropout=dropout, num_layers=num_layers, nhead=nhead, dim_model=dim_model)
 
-    def forward(self, x: torch.Tensor):
-        x = self.encoder(x)
-        x = self.decoder(x)
+    def forward(self, assembly: list[str], current_generated_code: list[str]):
+        x = self.encoder(assembly)
+        #x = self.decoder(assembly)
         return x
 
     def train(self, train: DerusterDataset, validation: DerusterDataset, epochs: int = 10, lr: float = 1e-3, batch_size: int = 32):
@@ -57,9 +69,9 @@ class DerusterModel(nn.Module):
             avg_loss = 0
             for bn, (binary, correct) in enumerate(batches):
                 optimizer.zero_grad()
-                binary = binary.to(self.computation_device)
-                correct = correct.to(self.computation_device)
-                output = self.forward(binary)
+                #binary = binary.to(self.computation_device)
+                #correct = correct.to(self.computation_device)
+                output = self.forward(binary, correct)
                 loss = criterion(output, correct)
                 loss.backward()
                 optimizer.step()
@@ -89,3 +101,9 @@ class DerusterModel(nn.Module):
                 batches.set_postfix(loss=avg_loss / (bn + 1))
             performance.append(avg_loss)
         return performance
+    
+    def _preprocess_asm(self, assembly: str):
+        return self.asm_tokenizer(assembly, padding=True, return_tensors='pt')
+    
+    def _preprocess_source(self, source: str):
+        return self.source_tokenizer(source, padding=True, return_tensors='pt')
