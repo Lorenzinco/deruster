@@ -13,7 +13,28 @@ class DerusterEncoder(nn.Module):
         self.code_tokenizer = transformers.AutoTokenizer.from_pretrained('microsoft/codebert-base')
         self.asm_tokenizer.pad_token = self.asm_tokenizer.eos_token
         self.code_tokenizer.pad_token = self.code_tokenizer.eos_token
+        self.embedding = nn.Embedding(self.asm_tokenizer.vocab_size, dim_model,device=self.computation_device)
 
+        self.convolution = nn.Sequential(
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+            nn.Conv1d(in_channels=dim_model, out_channels=dim_model, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2,stride=2),
+        )
         encoder_layer = nn.TransformerEncoderLayer(d_model=dim_model, nhead=nhead,batch_first=True, dropout=dropout,
             dim_feedforward=4*dim_model, activation='gelu',device=self.computation_device)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers,norm=nn.LayerNorm(dim_model),
@@ -21,7 +42,11 @@ class DerusterEncoder(nn.Module):
 
     def forward(self, x: list[str]):
         x = self.asm_tokenizer(x, padding=True, return_tensors='pt')
-        tokens = x['input_ids']
+        unembedded_tokens   = x['input_ids'].to(self.computation_device)
+        tokens = self.embedding(unembedded_tokens)
+        tokens = tokens.permute(0,2,1)
+        tokens = self.convolution(tokens)
+        tokens = tokens.permute(0,2,1)
         attention_mask = x['attention_mask']
         attention_mask = attention_mask.bool().to(self.computation_device)
         x = self.transformer(tokens, src_key_padding_mask=attention_mask)
@@ -44,7 +69,7 @@ class DerusterDecoder(nn.Module):
         return x
     
 class DerusterModel(nn.Module):
-    def __init__(self, device: str = "cpu", dropout: float = 0.1, num_layers: int = 6, nhead: int = 8, dim_model: int = 512):
+    def __init__(self, device: str = "cpu", dropout: float = 0.1, num_layers: int = 6, nhead: int = 8, dim_model: int = 32):
         super().__init__()
         self.computation_device = device
         self.dropout = dropout
@@ -56,7 +81,7 @@ class DerusterModel(nn.Module):
         #x = self.decoder(assembly)
         return x
 
-    def train(self, train: DerusterDataset, validation: DerusterDataset, epochs: int = 10, lr: float = 1e-3, batch_size: int = 32):
+    def train(self, train: DerusterDataset, validation: DerusterDataset, epochs: int = 10, lr: float = 1e-4, batch_size: int = 8):
         self.to(self.computation_device)
         train_performance = []
         validation_performance = []
@@ -74,6 +99,7 @@ class DerusterModel(nn.Module):
                 output = self.forward(binary, correct)
                 loss = criterion(output, correct)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.parameters(), 1.0)
                 optimizer.step()
                 avg_loss += loss.item()
                 batches.set_postfix(loss=avg_loss / (bn + 1))
