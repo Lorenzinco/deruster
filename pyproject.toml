@@ -2,7 +2,7 @@
 name = "deruster"
 version = "0.1.0"
 description = "A Python project"
-dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib", "argparse", "transformers", "protobuf", "sentencepiece"]
+dependencies = [ "torch", "numpy", "tqdm", "tiktoken", "matplotlib", "argparse", "transformers", "protobuf", "sentencepiece", "tree_sitter", "tree_sitter", "tree-sitter-rust",]
 [[project.authors]]
 name = "Lorenzo Colombini"
 
@@ -20,5 +20,5 @@ split = "deruster.scripts.split:split"
 [project.license]
 file = "LICENSE"
 
-[tool.setuptools.packages.find]
-include = [ "deruster", "deruster.*",]
+[tool.setuptools.package-dir]
+deruster = "deruster"

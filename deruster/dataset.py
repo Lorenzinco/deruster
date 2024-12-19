@@ -22,12 +22,27 @@ class DerusterDataset(Dataset):
 
         binaries = []
         for asm_name in assembly:
+            
             filename = asm_name.split(".")[0]
             source_name = filename + ".rs"
             if source_name not in source:
                 continue
-            binary = {"assembly" : os.path.join(assembly_path, asm_name), "source": os.path.join(source_path, source_name)}
-            binaries.append(binary)
+            asm_functions_dir = os.path.join(assembly_path, filename)
+            source_functions_dir = os.path.join(source_path, filename)
+            if not os.path.exists(asm_functions_dir) or not os.path.exists(source_functions_dir):
+                continue
+
+            source_functions = os.listdir(source_functions_dir)
+            if len(source_functions) == 0:
+                continue
+            for source_function in source_functions:
+                asm_function = source_function.replace(".rs", ".s")
+                if source_function not in os.listdir(source_functions_dir):
+                    continue
+                if source_function == "main.rs":
+                    continue
+                binary = {"assembly" : os.path.join(asm_functions_dir, asm_function), "source": os.path.join(source_functions_dir, source_function)}
+                binaries.append(binary)
         
         random.shuffle(binaries)
         split = int(len(binaries) * VALIDATION_SPLIT)
