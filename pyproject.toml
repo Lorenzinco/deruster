@@ -16,6 +16,7 @@ train = "deruster.scripts.train:train"
 generate = "deruster.scripts.generate:generate_dataset"
 compile = "deruster.scripts.compile:compile"
 split = "deruster.scripts.split:split"
+jsonify = "deruster.scripts.jsonify:jsonify"
 
 [project.license]
 file = "LICENSE"
